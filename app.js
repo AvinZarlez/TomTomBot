@@ -21,16 +21,19 @@ server.post('/api/messages', connector.listen())
 
 bot.dialog('/', [
     function (session) {
-        session.dialogData.save = null;
-        builder.Prompts.confirm(session, "Would you like to play a game?");
+        //session.dialogData.save = null;
+        session.send(session.dialogData.time+"Hello! Welcome to the TomTom Online Routing API Bot Framework demo. I can tell you when you need to leave in order to arrive at your destination on time.");
+        session.beginDialog("/getTime");
     },
     function (session, results) {
-        if (results.response) {
+        session.send(session.dialogData.time+" is what the dialog data is and you entered "+results.response.time);
+        
+        /*if (results.response) {
             session.replaceDialog('/loop', session.dialogData.save)
         }
         else {
             session.send("No? Oh well! Ask again later.");
-        }
+        }*/
     }
 ]);
 
@@ -49,5 +52,27 @@ bot.dialog('/loop', [
         session.dialogData.save = null;
 
         session.endDialog();
+    }
+]);
+
+bot.dialog('/getTime', [
+    function (session) {
+        builder.Prompts.time(session, "What time would you like to set an alarm for?");
+    },
+    function (session, results) {
+        if (results.response) {
+            session.dialogData.time = builder.EntityRecognizer.resolveTime([results.response]);
+        }
+
+        // Return time  
+        if (session.dialogData.time) {
+            session.endDialogWithResult({ 
+                response: { time: session.dialogData.time } 
+            }); 
+        } else {
+            session.endDialogWithResult({
+                resumed: builder.ResumeReason.notCompleted
+            });
+        }
     }
 ]);
