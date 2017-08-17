@@ -1,7 +1,7 @@
 {
   "name": "tomtombot",
   "version": "1.0.0",
-  "description": "",
+  "description": "A sample bot with integration with TomTom's API",
   "main": "app.js",
   "dependencies": {
     "botbuilder": "^3.7.0",
@@ -10,6 +10,6 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "Tobiah Zarlez",
+  "license": "MIT"
 }
