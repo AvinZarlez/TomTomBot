@@ -21,8 +21,12 @@ server.post('/api/messages', connector.listen())
 
 bot.dialog('/', [
     function (session) {
-        //session.dialogData.save = null;
-        session.send(session.dialogData.time+"Hello! Welcome to the TomTom Online Routing API Bot Framework demo. I can tell you when you need to leave in order to arrive at your destination on time.");
+        session.send(session.userData.startLocation+"Hello! Welcome to the TomTom Online Routing API Bot Framework demo. I can tell you when you need to leave in order to arrive at your destination on time.");
+    
+        session.beginDialog("/getStartLocation",session.userData.startLocation);
+    },
+    function (session, results) {
+        session.send(session.userData.startLocation+" is what the start user date is and you entered "+results.response.startLocation);
         session.beginDialog("/getTime");
     },
     function (session, results) {
@@ -52,6 +56,48 @@ bot.dialog('/loop', [
         session.dialogData.save = null;
 
         session.endDialog();
+    }
+]);
+
+bot.dialog('/getStartLocation', [
+    function (session, startLocation, next) {
+        session.dialogData.startLocation = startLocation;
+        if (session.dialogData.startLocation)
+        {
+            builder.Prompts.confirm(session, "Are you starting your journey from \""+session.dialogData.startLocation+"\" again?");
+        }
+        else
+        {
+            next(); // Skip to asking if we don't have the location
+        }
+    },
+    function (session, results) {
+        if (results.response) {
+            session.endDialogWithResult({ 
+                response: { startLocation: session.dialogData.startLocation } 
+            }); 
+        }
+        else
+        {
+            builder.Prompts.text(session, "Enter an address you'd like to start from:");
+        }
+    },
+    function (session, results) {
+        if (results.response) {
+            session.dialogData.startLocation = results.response;
+        }
+        
+        if (session.dialogData.startLocation) {
+            session.userData.startLocation = session.dialogData.startLocation; //TODO: Geocash this!!!
+
+            session.endDialogWithResult({ 
+                response: { startLocation: session.dialogData.startLocation } 
+            }); 
+        } else {
+            session.endDialogWithResult({
+                resumed: builder.ResumeReason.notCompleted
+            });
+        }
     }
 ]);
 
