@@ -38,6 +38,8 @@ var getGeo = function (location, func) {
 
         var value = JSON.parse(body);
 
+        console.log("DEBUG INFO: Called Geocode API on " + location + ", returned value:", value)
+
         var position;
 
         if (value) {
@@ -72,7 +74,7 @@ bot.dialog('/results', [
 
             var value = JSON.parse(body);
 
-            //console.log("value: ", value)
+            console.log("DEBUG INFO: User " + session.message.user.id + " called Routing API, returned value:", value)
 
             var departureTime;
 
@@ -88,7 +90,7 @@ bot.dialog('/results', [
 
             if (departureTime) {
                 var dateObject = new Date(departureTime);
-                
+
                 session.send("In order to get there on time, you should leave by " + dateObject.toString());
             }
             else {
