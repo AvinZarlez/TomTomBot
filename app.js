@@ -1,4 +1,3 @@
-
 //Install dependencies 
 "use strict";
 var builder = require('botbuilder');
@@ -30,6 +29,8 @@ bot.dialog('/results', [
 ]);
 
 var getGeo = function(location,func) {
+    // Return into func the actual Geo value of the string address.
+
     func( location );
 }
 
