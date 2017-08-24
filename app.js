@@ -25,12 +25,11 @@ server.post('/api/messages', connector.listen())
 
 // START TomTom API related Functions
 
-
 // Convert String Address to Geo Location
 var getGeo = function (location, func) {
     // Return into func the actual Geo value of the string address.
 
-    request("https://api.tomtom.com/search/2/geocode/" + encodeURI(location) + ".json?key="+apiKey, function (error, response, body) {
+    request("https://api.tomtom.com/search/2/geocode/" + encodeURI(location) + ".json?key="+process.env['TomTomAPIKey'], function (error, response, body) {
         //console.log('error:', error); // Print the error if one occurred 
         //console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received 
         //console.log('body:', body); // Print what was returned

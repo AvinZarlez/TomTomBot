@@ -8,7 +8,10 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "program": "${workspaceRoot}\\app.js"
+            "program": "${workspaceRoot}\\app.js",
+            "env": {
+                "TomTomAPIKey": "<Enter your Tom Tom API key here>"
+            },
         }
     ]
 }
