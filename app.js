@@ -19,11 +19,20 @@ var connector = new builder.ChatConnector({
 var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen())
 
+
 bot.dialog('/', [
+    function (session) {
+        session.send("Hello! Welcome to the TomTom Online Routing API Bot Framework demo. I can tell you when you need to leave in order to arrive at your destination on time.");
+
+        session.beginDialog("/loop")
+    }
+]);
+
+
+bot.dialog('/loop', [
     function (session) {
         session.send("DEBUG: Userdata dump: {startLocation: "+session.userData.startLocation+", destLocation: "+session.userData.destLocation+"}");
 
-        session.send("Hello! Welcome to the TomTom Online Routing API Bot Framework demo. I can tell you when you need to leave in order to arrive at your destination on time.");
     
         session.beginDialog("/getStartLocation",session.userData.startLocation);
     },
@@ -40,30 +49,27 @@ bot.dialog('/', [
     function (session, results) {
         session.send("You want to arrive by "+results.response.time);
         
-        /*if (results.response) {
-            session.replaceDialog('/loop', session.dialogData.save)
+        //Results prompt
+    },
+    function (session, results) {
+        
+        builder.Prompts.choice(session,"Would you like to calculate another route?",["Yes","Yes, but forget everything I told you before","No, not right now"])
+        
+    },
+    function (session, results) {
+        if (results.response.entity == "Yes") {
+            session.replaceDialog('/loop')
+        }
+        else if (results.response.entity == "Yes, but forget everything I told you before") {
+            session.userData.startLocation = null;
+            session.userData.destLocation = null;
+
+            session.replaceDialog('/loop');
         }
         else {
-            session.send("No? Oh well! Ask again later.");
-        }*/
-    }
-]);
-
-bot.dialog('/loop', [
-    function (session, args) {
-        session.dialogData.save = args || null;
-
-        if (session.dialogData.save != null) {
+            session.send("No? Ok! If you change your mind, send me another message");
+            session.endDialog();
         }
-        else {
-            session.send("NEW GAME");
-        }
-
-        session.send("GAME OVER");
-
-        session.dialogData.save = null;
-
-        session.endDialog();
     }
 ]);
 
