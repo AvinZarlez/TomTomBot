@@ -1,7 +1,8 @@
+// START Microsoft Bot Framework setup
+
 //Install dependencies 
 "use strict";
 var builder = require('botbuilder');
-
 var restify = require('restify');
 
 // Setup Restify Server
@@ -18,6 +19,19 @@ var connector = new builder.ChatConnector({
 var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen())
 
+// END Microsoft Bot Framework setup
+
+
+// START TomTom API related Functions
+
+// Convert String Address to Geo Location
+var getGeo = function(location,func) {
+    // Return into func the actual Geo value of the string address.
+
+    func( location );
+}
+
+// Bot dialog to display results
 bot.dialog('/results', [
     function (session,route) {
         console.log("DEBUG INFO: User "+session.message.user.id+" route var dump: "+JSON.stringify(route));
@@ -28,12 +42,12 @@ bot.dialog('/results', [
     }
 ]);
 
-var getGeo = function(location,func) {
-    // Return into func the actual Geo value of the string address.
+// END TomTom API related functions
 
-    func( location );
-}
 
+// START Main Microsoft Bot Framework dialogs
+
+// Initial dialog
 bot.dialog('/', [
     function (session) {
         session.send("Hello! Welcome to the TomTom Online Routing API Bot Framework demo. I can tell you when you need to leave in order to arrive at your destination on time.");
@@ -42,11 +56,12 @@ bot.dialog('/', [
         {
             session.userData.route = {}
         }
-        session.beginDialog("/loop")
+        session.beginDialog("/demo")
     }
 ]);
 
-bot.dialog('/loop', [
+// Demo dialog
+bot.dialog('/demo', [
     function (session) {
         //console.log("DEBUG INFO: User "+session.message.user.id+" Userdata dump: "+JSON.stringify(session.userData.route));
 
@@ -88,6 +103,7 @@ bot.dialog('/loop', [
     }
 ]);
 
+// A dialog to get a starting location
 bot.dialog('/getStartLocation', [
     function (session, startLocation, next) {
         session.dialogData.startLocation = startLocation;
@@ -134,6 +150,7 @@ bot.dialog('/getStartLocation', [
     }
 ]);
 
+// A dialog to get a destination
 bot.dialog('/getDestLocation', [
     function (session, destLocation, next) {
         session.dialogData.destLocation = destLocation;
@@ -180,6 +197,7 @@ bot.dialog('/getDestLocation', [
     }
 ]);
 
+// A dialog to get the desired arrive by time
 bot.dialog('/getTime', [
     function (session) {
         builder.Prompts.time(session, "What time would you like to get there by?");
@@ -205,3 +223,5 @@ bot.dialog('/getTime', [
         }
     }
 ]);
+
+// END Main Microsoft Bot Framework dialogs
