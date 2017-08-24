@@ -21,11 +21,17 @@ server.post('/api/messages', connector.listen())
 
 bot.dialog('/results', [
     function (session,route) {
-        session.send("You want to go from "+route.start+" to "+route.dest+" by "+route.destTime);
+        console.log("DEBUG INFO: User "+session.message.user.id+" route var dump: "+JSON.stringify(route));
+
+        var dateObject = new Date(route.time);
 
         session.endDialog();
     }
 ]);
+
+var getGeo = function(location,func) {
+    func( location );
+}
 
 bot.dialog('/', [
     function (session) {
@@ -41,7 +47,7 @@ bot.dialog('/', [
 
 bot.dialog('/loop', [
     function (session) {
-        session.send("DEBUG: Userdata dump: "+JSON.stringify(session.userData.route));
+        //console.log("DEBUG INFO: User "+session.message.user.id+" Userdata dump: "+JSON.stringify(session.userData.route));
 
         session.beginDialog("/getStartLocation",session.userData.route.start);
     },
@@ -51,7 +57,7 @@ bot.dialog('/loop', [
         session.beginDialog("/getDestLocation",session.userData.route.dest);
     },
     function (session, results) {
-        session.send("You will be traveling to "+session.userData.route.start);
+        session.send("You will be traveling to "+session.userData.route.dest);
 
         session.beginDialog("/getTime");
     },
@@ -110,11 +116,15 @@ bot.dialog('/getStartLocation', [
         }
         
         if (session.dialogData.startLocation) {
-            session.userData.route.start = session.dialogData.startLocation; //TODO: Geocash this!!!
+            session.userData.route.start = session.dialogData.startLocation;
 
-            session.endDialogWithResult({ 
-                response: { startLocation: session.dialogData.startLocation } 
-            }); 
+            getGeo(session.userData.route.start, function (startGeo) { 
+                session.userData.route.startGeo = startGeo;
+
+                session.endDialogWithResult({ 
+                    response: { startLocation: session.dialogData.startLocation } 
+                }); 
+            });
         } else {
             session.endDialogWithResult({
                 resumed: builder.ResumeReason.notCompleted
@@ -152,11 +162,15 @@ bot.dialog('/getDestLocation', [
         }
         
         if (session.dialogData.destLocation) {
-            session.userData.route.dest = session.dialogData.destLocation; //TODO: Geocash this!!!
+            session.userData.route.dest = session.dialogData.destLocation;
+            
+            getGeo(session.userData.route.dest, function (destGeo) { 
+                session.userData.route.destGeo = destGeo;
 
-            session.endDialogWithResult({ 
-                response: { destLocation: session.dialogData.destLocation } 
-            }); 
+                session.endDialogWithResult({ 
+                    response: { destLocation: session.dialogData.destLocation } 
+                }); 
+            });
         } else {
             session.endDialogWithResult({
                 resumed: builder.ResumeReason.notCompleted
@@ -172,8 +186,8 @@ bot.dialog('/getTime', [
     function (session, results) {
         if (results.response) {
             var t = builder.EntityRecognizer.resolveTime([results.response]);
-            session.dialogData.time = t.toISOString();
-            //var dateObject = new Date(session.userData.route.time);
+            session.dialogData.time = t.toISOString(); //Storing date object as String
+            // To get back as Date object: var dateObject = new Date(session.userData.route.time);
         }
 
         // Return time  
