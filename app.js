@@ -4,6 +4,7 @@
 "use strict";
 var builder = require('botbuilder');
 var restify = require('restify');
+var request = require('request');
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -89,12 +90,12 @@ bot.dialog('/demo', [
     },
     function (session, results) {
         if (results.response.entity == "Yes") {
-            session.replaceDialog('/loop')
+            session.replaceDialog('/demo')
         }
         else if (results.response.entity == "Yes, but forget everything I told you before") {
             session.userData.route = {};
 
-            session.replaceDialog('/loop');
+            session.replaceDialog('/demo');
         }
         else {
             session.send("No? Ok! If you change your mind, send me another message");
