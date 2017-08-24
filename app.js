@@ -29,10 +29,12 @@ server.post('/api/messages', connector.listen())
 var getGeo = function (location, func) {
     // Return into func the actual Geo value of the string address.
 
-    request("https://api.tomtom.com/search/2/geocode/" + encodeURI(location) + ".json?key="+process.env['TomTomAPIKey'], function (error, response, body) {
+    request("https://api.tomtom.com/search/2/geocode/" + encodeURI(location) + ".json?key=" + process.env['TomTomAPIKey'], function (error, response, body) {
         //console.log('error:', error); // Print the error if one occurred 
         //console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received 
         //console.log('body:', body); // Print what was returned
+
+        // TO DO: Add error checking
 
         var value = JSON.parse(body);
 
@@ -61,9 +63,20 @@ bot.dialog('/results', [
     function (session, route) {
         console.log("DEBUG INFO: User " + session.message.user.id + " route var dump: " + JSON.stringify(route));
 
-        var dateObject = new Date(route.time);
+        request("https://api.tomtom.com/routing/1/calculateRoute/" + route.startGeo + ":" + route.destGeo + "/json?key=" + process.env['TomTomAPIKey'] + "&arriveAt=" + route.destTime, function (error, response, body) {
+            console.log('error:', error); // Print the error if one occurred 
+            console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received 
+            console.log('body:', body); // Print what was returned
 
-        session.endDialog();
+            // TO DO: Add error checking
+
+            var value = JSON.parse(body);
+
+            console.log("value: ", value)
+
+            session.endDialog();
+        });
+
     }
 ]);
 
@@ -131,7 +144,9 @@ bot.dialog('/demo', [
 bot.dialog('/getStartLocation', [
     function (session, startLocation, next) {
         if (startLocation) {
-            builder.Prompts.confirm(session, "Are you starting your journey from \"" + startLocation + "\" again?");
+            session.dialogData.startLocation = startLocation;
+
+            builder.Prompts.confirm(session, "Are you starting your journey from \"" + session.dialogData.startLocation + "\" again?");
         }
         else {
             next(); // Skip to asking if we don't have the location
@@ -140,7 +155,7 @@ bot.dialog('/getStartLocation', [
     function (session, results) {
         if (results.response) {
             session.endDialogWithResult({
-                response: { startLocation: startLocation }
+                response: { startLocation: session.dialogData.startLocation }
             });
         }
         else {
@@ -175,7 +190,9 @@ bot.dialog('/getStartLocation', [
 bot.dialog('/getDestLocation', [
     function (session, destLocation, next) {
         if (destLocation) {
-            builder.Prompts.confirm(session, "Are you traveling to \"" + destLocation + "\" again?");
+            session.dialogData.destLocation = destLocation;
+
+            builder.Prompts.confirm(session, "Are you traveling to \"" + session.dialogData.destLocation + "\" again?");
         }
         else {
             next(); // Skip to asking if we don't have the location
@@ -184,7 +201,7 @@ bot.dialog('/getDestLocation', [
     function (session, results) {
         if (results.response) {
             session.endDialogWithResult({
-                response: { destLocation: destLocation }
+                response: { destLocation: session.dialogData.destLocation }
             });
         }
         else {
@@ -223,22 +240,35 @@ bot.dialog('/getTime', [
     function (session, results) {
         if (results.response) {
             var t = builder.EntityRecognizer.resolveTime([results.response]);
-            if (t)
+
+            var now = new Date();
+
+            if (t > now) {
                 session.dialogData.time = t.toISOString(); //Storing date object as String
-            // To get back as Date object: var dateObject = new Date(session.userData.route.time);
+                // To get back as Date object: var dateObject = new Date(session.userData.route.time);
+
+                // Return time  
+                if (session.dialogData.time) {
+                    session.userData.route.destTime = session.dialogData.time;
+
+                    session.endDialogWithResult({
+                        response: { time: session.dialogData.time }
+                    });
+                } else {
+                    session.endDialogWithResult({
+                        resumed: builder.ResumeReason.notCompleted
+                    });
+                }
+            }
+            else {
+                session.send("ERROR! Time must be in the future.");
+                session.replaceDialog('/getTime');
+            }
         }
-
-        // Return time  
-        if (session.dialogData.time) {
-            session.userData.route.destTime = session.dialogData.time;
-
-            session.endDialogWithResult({
-                response: { time: session.dialogData.time }
-            });
-        } else {
-            session.endDialogWithResult({
-                resumed: builder.ResumeReason.notCompleted
-            });
+        else {
+            // Possibly redundant?
+            session.send("ERROR! Could not understand time.");
+            session.replaceDialog('/getTime');
         }
     }
 ]);
