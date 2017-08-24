@@ -61,18 +61,39 @@ var getGeo = function (location, func) {
 // Bot dialog to display results
 bot.dialog('/results', [
     function (session, route) {
-        console.log("DEBUG INFO: User " + session.message.user.id + " route var dump: " + JSON.stringify(route));
+        //console.log("DEBUG INFO: User " + session.message.user.id + " route var dump: " + JSON.stringify(route));
 
         request("https://api.tomtom.com/routing/1/calculateRoute/" + route.startGeo + ":" + route.destGeo + "/json?key=" + process.env['TomTomAPIKey'] + "&arriveAt=" + route.destTime, function (error, response, body) {
-            console.log('error:', error); // Print the error if one occurred 
-            console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received 
-            console.log('body:', body); // Print what was returned
+            //console.log('error:', error); // Print the error if one occurred 
+            //console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received 
+            //console.log('body:', body); // Print what was returned
 
             // TO DO: Add error checking
 
             var value = JSON.parse(body);
 
-            console.log("value: ", value)
+            //console.log("value: ", value)
+
+            var departureTime;
+
+            if (value) {
+                if (value.routes) {
+                    if (value.routes[0]) {
+                        if (value.routes[0].summary) {
+                            departureTime = value.routes[0].summary.departureTime
+                        }
+                    }
+                }
+            }
+
+            if (departureTime) {
+                var dateObject = new Date(departureTime);
+                
+                session.send("In order to get there on time, you should leave by " + dateObject.toString());
+            }
+            else {
+                session.send("ERROR! Could not calculate departure time.");
+            }
 
             session.endDialog();
         });
@@ -115,7 +136,8 @@ bot.dialog('/demo', [
         session.beginDialog("/getTime");
     },
     function (session, results) {
-        session.send("You want to arrive by " + session.userData.route.destTime);
+        var dateObject = new Date(session.userData.route.destTime);
+        session.send("You want to arrive by " + dateObject.toString());
 
         session.beginDialog("/results", session.userData.route);
     },
