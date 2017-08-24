@@ -19,37 +19,46 @@ var connector = new builder.ChatConnector({
 var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen())
 
+bot.dialog('/results', [
+    function (session,route) {
+        session.send("You want to go from "+route.start+" to "+route.dest+" by "+route.destTime);
+
+        session.endDialog();
+    }
+]);
 
 bot.dialog('/', [
     function (session) {
         session.send("Hello! Welcome to the TomTom Online Routing API Bot Framework demo. I can tell you when you need to leave in order to arrive at your destination on time.");
 
+        if (session.userData.route == null)
+        {
+            session.userData.route = {}
+        }
         session.beginDialog("/loop")
     }
 ]);
 
-
 bot.dialog('/loop', [
     function (session) {
-        session.send("DEBUG: Userdata dump: {startLocation: "+session.userData.startLocation+", destLocation: "+session.userData.destLocation+"}");
+        session.send("DEBUG: Userdata dump: "+JSON.stringify(session.userData.route));
 
-    
-        session.beginDialog("/getStartLocation",session.userData.startLocation);
+        session.beginDialog("/getStartLocation",session.userData.route.start);
     },
     function (session, results) {
-        session.send("You are starting your journey from "+session.userData.startLocation);
+        session.send("You are starting your journey from "+session.userData.route.start);
     
-        session.beginDialog("/getDestLocation",session.userData.destLocation);
+        session.beginDialog("/getDestLocation",session.userData.route.dest);
     },
     function (session, results) {
-        session.send("You will be traveling to "+session.userData.startLocation);
+        session.send("You will be traveling to "+session.userData.route.start);
 
         session.beginDialog("/getTime");
     },
     function (session, results) {
-        session.send("You want to arrive by "+results.response.time);
+        session.send("You want to arrive by "+session.userData.route.destTime);
         
-        //Results prompt
+        session.beginDialog("/results",session.userData.route);
     },
     function (session, results) {
         
@@ -61,8 +70,7 @@ bot.dialog('/loop', [
             session.replaceDialog('/loop')
         }
         else if (results.response.entity == "Yes, but forget everything I told you before") {
-            session.userData.startLocation = null;
-            session.userData.destLocation = null;
+            session.userData.route = {};
 
             session.replaceDialog('/loop');
         }
@@ -102,7 +110,7 @@ bot.dialog('/getStartLocation', [
         }
         
         if (session.dialogData.startLocation) {
-            session.userData.startLocation = session.dialogData.startLocation; //TODO: Geocash this!!!
+            session.userData.route.start = session.dialogData.startLocation; //TODO: Geocash this!!!
 
             session.endDialogWithResult({ 
                 response: { startLocation: session.dialogData.startLocation } 
@@ -144,7 +152,7 @@ bot.dialog('/getDestLocation', [
         }
         
         if (session.dialogData.destLocation) {
-            session.userData.destLocation = session.dialogData.destLocation; //TODO: Geocash this!!!
+            session.userData.route.dest = session.dialogData.destLocation; //TODO: Geocash this!!!
 
             session.endDialogWithResult({ 
                 response: { destLocation: session.dialogData.destLocation } 
@@ -164,14 +172,16 @@ bot.dialog('/getTime', [
     function (session, results) {
         if (results.response) {
             var t = builder.EntityRecognizer.resolveTime([results.response]);
-            //session.dialogData.time = t.toISOString();
-            //var dateObject = new Date(session.userdata.time);
+            session.dialogData.time = t.toISOString();
+            //var dateObject = new Date(session.userData.route.time);
         }
 
         // Return time  
-        if (t) {
+        if (session.dialogData.time) {
+            session.userData.route.destTime = session.dialogData.time;
+
             session.endDialogWithResult({ 
-                response: { time: t } 
+                response: { time: session.dialogData.time } 
             }); 
         } else {
             session.endDialogWithResult({
