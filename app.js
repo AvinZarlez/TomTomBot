@@ -75,26 +75,35 @@ bot.dialog('/results', [
             var value = JSON.parse(body);
 
             console.log("DEBUG INFO: User " + session.message.user.id + " called Routing API, returned value:", value)
-
-            var departureTime;
-
+            
             if (value) {
-                if (value.routes) {
-                    if (value.routes[0]) {
-                        if (value.routes[0].summary) {
-                            departureTime = value.routes[0].summary.departureTime
+                if (value.error) {
+                    session.send("ERROR! TomTom API returned: "+value.error.description);
+                }
+                else
+                {
+                    var departureTime;
+                
+                    if (value.routes) {
+                        if (value.routes[0]) {
+                            if (value.routes[0].summary) {
+                                departureTime = value.routes[0].summary.departureTime
+                            }
                         }
+                    }
+
+                    if (departureTime) {
+                        var dateObject = new Date(departureTime);
+
+                        session.send("In order to get there on time, you should leave by " + dateObject.toString());
+                    }
+                    else {
+                        session.send("ERROR! For some reason, I could not calculate departure time. Sorry!");
                     }
                 }
             }
-
-            if (departureTime) {
-                var dateObject = new Date(departureTime);
-
-                session.send("In order to get there on time, you should leave by " + dateObject.toString());
-            }
             else {
-                session.send("ERROR! Could not calculate departure time.");
+                session.send("ERROR! Bot did not get valid JSON back from TomTom API.");
             }
 
             session.endDialog();
