@@ -95,7 +95,7 @@ bot.dialog('/results', [
                     if (departureTime) {
                         var dateObject = new Date(departureTime);
 
-                        session.send("In order to get there on time, you should leave by " + dateObject.toString());
+                        session.send("Thanks to the TomTom Routing API, I know in order to get there on time you should leave by " + dateObject.toString() + "!");
                     }
                     else {
                         session.send("ERROR! For some reason, I could not calculate departure time. Sorry!");
@@ -137,12 +137,12 @@ bot.dialog('/demo', [
         session.beginDialog("/getStartLocation", session.userData.route.start);
     },
     function (session, results) {
-        session.send("You are starting your journey from " + session.userData.route.start);
+        session.send("You are starting your journey from " + session.userData.route.start + ". Thanks to the TomTom Geocoding API, I know that's located at " + session.userData.route.startGeo);
 
         session.beginDialog("/getDestLocation", session.userData.route.dest);
     },
     function (session, results) {
-        session.send("You will be traveling to " + session.userData.route.dest);
+        session.send("You will be traveling to " + session.userData.route.dest + ". Thanks to the TomTom Geocoding API, I know that's located at " + session.userData.route.destGeo);
 
         session.beginDialog("/getTime");
     },
