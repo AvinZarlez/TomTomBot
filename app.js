@@ -285,7 +285,7 @@ bot.dialog('/getTime', [
                 }
             }
             else {
-                session.send("ERROR! Time must be in the future.");
+                session.send("ERROR! Time must be in the future. (My default timezone is GMT)");
                 session.replaceDialog('/getTime');
             }
         }
