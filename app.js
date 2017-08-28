@@ -29,43 +29,8 @@ server.post('/api/messages', connector.listen())
 var getGeo = function (location, func) {
     // Return into func the actual Geo value of the string address.
 
-    request("https://api.tomtom.com/search/2/geocode/" + encodeURI(location) + ".json?key=" + process.env['TomTomAPIKey'], function (error, response, body) {
-        //console.log('error:', error); // Print the error if one occurred 
-        //console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received 
-        //console.log('body:', body); // Print what was returned
-
-        // TO DO: Add error checking
-
-        var value = JSON.parse(body);
-
-        console.log("DEBUG INFO: Called Geocode API on " + location + ", returned value:", value)
-
-        var position;
-
-        if (value) {
-            if (value.results) {
-                if (value.results[0]) {
-                    if (value.results[0].position) {
-                        position = value.results[0].position.lat + "," + value.results[0].position.lon
-                    }
-                }
-            }
-        }
-
-        if (position)
-            func(position);
-        else
-            func("ERROR"); // TO DO: Add better error messaging
-    });
-
-}
-
-// Bot dialog to display results
-bot.dialog('/results', [
-    function (session, route) {
-        //console.log("DEBUG INFO: User " + session.message.user.id + " route var dump: " + JSON.stringify(route));
-
-        request("https://api.tomtom.com/routing/1/calculateRoute/" + route.startGeo + ":" + route.destGeo + "/json?key=" + process.env['TomTomAPIKey'] + "&arriveAt=" + route.destTime, function (error, response, body) {
+    request("https://api.tomtom.com/search/2/geocode/" + encodeURI(location) + ".json?key=" + process.env['TomTomAPIKey'],
+        function (error, response, body) {
             //console.log('error:', error); // Print the error if one occurred 
             //console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received 
             //console.log('body:', body); // Print what was returned
@@ -74,45 +39,115 @@ bot.dialog('/results', [
 
             var value = JSON.parse(body);
 
-            console.log("DEBUG INFO: User " + session.message.user.id + " called Routing API, returned value:", value)
-            
+            console.log("DEBUG INFO: Called Geocode API on " + location + ", returned value:", value)
+
+            var position;
+            var freeformAddress;
+
             if (value) {
-                if (value.error) {
-                    session.send("ERROR! TomTom API returned: "+value.error.description);
-                }
-                else
-                {
-                    var departureTime;
-                
-                    if (value.routes) {
-                        if (value.routes[0]) {
-                            if (value.routes[0].summary) {
-                                departureTime = value.routes[0].summary.departureTime
-                            }
+                if (value.results) {
+                    if (value.results[0]) {
+                        if (value.results[0].position) {
+                            position = value.results[0].position.lat + "," + value.results[0].position.lon;
+                        }
+
+                        if (value.results[0].address) {
+                            freeformAddress = value.results[0].address.freeformAddress;
                         }
                     }
-
-                    if (departureTime) {
-                        var dateObject = new Date(departureTime);
-
-                        session.send("Thanks to the TomTom Routing API, I know in order to get there on time you should leave by " + dateObject.toString() + "!");
-                    }
-                    else {
-                        session.send("ERROR! For some reason, I could not calculate departure time. Sorry!");
-                    }
                 }
             }
-            else {
-                session.send("ERROR! Bot did not get valid JSON back from TomTom API.");
-            }
 
-            session.endDialog();
+            if (position && freeformAddress)
+                func(freeformAddress, position);
+            else
+                func("ERROR", "ERROR"); // TO DO: Add better error messaging
         });
+
+}
+
+// Bot dialog to display results
+bot.dialog('/results', [
+    function (session, route) {
+        //console.log("DEBUG INFO: User " + session.message.user.id + " route var dump: " + JSON.stringify(route));
+
+        request("https://api.tomtom.com/routing/1/calculateRoute/" + route.startGeo + ":" + route.destGeo + "/json?key=" + process.env['TomTomAPIKey'] + "&computeTravelTimeFor=all&arriveAt=" + route.destTime,
+            function (error, response, body) {
+                //console.log('error:', error); // Print the error if one occurred 
+                //console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received 
+                //console.log('body:', body); // Print what was returned
+
+                // TO DO: Add error checking
+
+                var value = JSON.parse(body);
+
+                console.log("DEBUG INFO: User " + session.message.user.id + " called Routing API, returned value:", value);
+
+                if (value) {
+                    if (value.error) {
+                        session.send("ERROR! TomTom API returned: " + value.error.description);
+                    }
+                    else {
+                        var departureTime;
+                        var noTrafficTravelTimeInSeconds, historicTrafficTravelTimeInSeconds, liveTrafficIncidentsTravelTimeInSeconds;
+
+                        if (value.routes) {
+                            if (value.routes[0]) {
+                                if (value.routes[0].summary) {
+                                    console.log("DEBUG INFO: User " + session.message.user.id + " summary value:", value.routes[0].summary);
+
+                                    departureTime = value.routes[0].summary.departureTime;
+                                    noTrafficTravelTimeInSeconds = value.routes[0].summary.noTrafficTravelTimeInSeconds;
+                                    historicTrafficTravelTimeInSeconds = value.routes[0].summary.historicTrafficTravelTimeInSeconds;
+                                    liveTrafficIncidentsTravelTimeInSeconds = value.routes[0].summary.liveTrafficIncidentsTravelTimeInSeconds;
+                                }
+                            }
+                        }
+
+                        if (departureTime) {
+                            var dateObject = new Date(departureTime);
+
+                            session.send("Thanks to the TomTom Routing API, I know that (assuming no traffic) it will take you " + secondsToHHMMSS(noTrafficTravelTimeInSeconds) +
+                                " to get there. However, historic traffic data suggests it will actually take " + secondsToHHMMSS(historicTrafficTravelTimeInSeconds) +
+                                ". Current live traffic reports estimate " + secondsToHHMMSS(liveTrafficIncidentsTravelTimeInSeconds) +
+                                ". Thus, in order to get to you destination on time, I suggest leaving by " + dateObject.toString() + "! ");
+
+
+                        }
+                        else {
+                            session.send("ERROR! For some reason, I could not calculate departure time. Sorry!");
+                        }
+                    }
+                }
+                else {
+                    session.send("ERROR! Bot did not get valid JSON back from TomTom API.");
+                }
+
+                session.endDialog();
+            });
 
     }
 ]);
 
 // END TomTom API related functions
+
+
+// START Conversion Functions
+
+var secondsToHHMMSS = function (str) {
+    console.log("Num is " + str)
+    var num = parseInt(str, 10);
+    var hours = Math.floor(num / 3600);
+    var minutes = Math.floor((num - (hours * 3600)) / 60);
+    var seconds = num - (hours * 3600) - (minutes * 60);
+
+    if (hours < 10) { hours = "0" + hours; }
+    if (minutes < 10) { minutes = "0" + minutes; }
+    if (seconds < 10) { seconds = "0" + seconds; }
+    return hours + ':' + minutes + ':' + seconds;
+}
+
+// END ConversionFunctions
 
 
 // START Main Microsoft Bot Framework dialogs
@@ -137,13 +172,9 @@ bot.dialog('/demo', [
         session.beginDialog("/getStartLocation", session.userData.route.start);
     },
     function (session, results) {
-        session.send("You are starting your journey from " + session.userData.route.start + ". Thanks to the TomTom Geocoding API, I know that's located at " + session.userData.route.startGeo);
-
         session.beginDialog("/getDestLocation", session.userData.route.dest);
     },
     function (session, results) {
-        session.send("You will be traveling to " + session.userData.route.dest + ". Thanks to the TomTom Geocoding API, I know that's located at " + session.userData.route.destGeo);
-
         session.beginDialog("/getTime");
     },
     function (session, results) {
@@ -154,7 +185,8 @@ bot.dialog('/demo', [
     },
     function (session, results) {
 
-        builder.Prompts.choice(session, "Would you like to calculate another route?", ["Yes", "Yes, but forget everything I told you before", "No, not right now"])
+        builder.Prompts.choice(session, "Would you like to calculate another route?",
+            ["Yes", "Yes, but forget everything I told you before", "No, not right now"]);
 
     },
     function (session, results) {
@@ -197,14 +229,17 @@ bot.dialog('/getStartLocation', [
     },
     function (session, results) {
         if (results.response) {
-            getGeo(results.response, function (startGeo) {
-                if (startGeo == "ERROR") {
+            getGeo(results.response, function (start, startGeo) {
+                if (start == "ERROR") {
                     session.send("ERROR! Could not validate address.")
                     session.replaceDialog('/getStartLocation');
                 }
                 else {
-                    session.userData.route.start = results.response;
+                    session.userData.route.start = start;
                     session.userData.route.startGeo = startGeo;
+
+                    session.send("Thanks to the TomTom Geocoding API, I think you mean \"" + session.userData.route.start +
+                        "\" which I know is located at " + session.userData.route.startGeo);
 
                     session.endDialogWithResult({
                         response: { startLocation: results.response }
@@ -243,14 +278,17 @@ bot.dialog('/getDestLocation', [
     },
     function (session, results) {
         if (results.response) {
-            getGeo(results.response, function (destGeo) {
-                if (destGeo == "ERROR") {
+            getGeo(results.response, function (dest, destGeo) {
+                if (dest == "ERROR") {
                     session.send("ERROR! Could not validate address.")
                     session.replaceDialog('/getDestLocation');
                 }
                 else {
-                    session.userData.route.dest = results.response;
+                    session.userData.route.dest = dest;
                     session.userData.route.destGeo = destGeo;
+
+                    session.send("Thanks to the TomTom Geocoding API, I think you mean \"" + session.userData.route.dest +
+                        "\" which I know is located at " + session.userData.route.destGeo);
 
                     session.endDialogWithResult({
                         response: { destLocation: results.response }
