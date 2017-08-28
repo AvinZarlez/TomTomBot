@@ -135,7 +135,6 @@ bot.dialog('/results', [
 // START Conversion Functions
 
 var secondsToHHMMSS = function (str) {
-    console.log("Num is " + str)
     var num = parseInt(str, 10);
     var hours = Math.floor(num / 3600);
     var minutes = Math.floor((num - (hours * 3600)) / 60);
@@ -169,10 +168,10 @@ bot.dialog('/demo', [
     function (session) {
         //console.log("DEBUG INFO: User "+session.message.user.id+" Userdata dump: "+JSON.stringify(session.userData.route));
 
-        session.beginDialog("/getStartLocation", session.userData.route.start);
+        session.beginDialog("/getLocation", true);
     },
     function (session, results) {
-        session.beginDialog("/getDestLocation", session.userData.route.dest);
+        session.beginDialog("/getLocation", false);
     },
     function (session, results) {
         session.beginDialog("/getTime");
@@ -205,13 +204,26 @@ bot.dialog('/demo', [
     }
 ]);
 
-// A dialog to get a starting location
-bot.dialog('/getStartLocation', [
-    function (session, startLocation, next) {
-        if (startLocation) {
-            session.dialogData.startLocation = startLocation;
+// A dialog to get a location
+bot.dialog('/getLocation', [
+    function (session, direction, next) {
+        session.dialogData.direction = direction;
 
-            builder.Prompts.confirm(session, "Are you starting your journey from \"" + session.dialogData.startLocation + "\" again?");
+        var str;
+
+        if (direction) {
+            session.dialogData.location = session.userData.route.start;
+
+            str = "Are you starting your journey from \"";
+        }
+        else {
+            session.dialogData.location = session.userData.route.dest;
+
+            str = "Are you traveling to \"";
+        }
+
+        if (session.dialogData.location) {
+            builder.Prompts.confirm(session, str + session.dialogData.location + "\" again?");
         }
         else {
             next(); // Skip to asking if we don't have the location
@@ -220,78 +232,43 @@ bot.dialog('/getStartLocation', [
     function (session, results) {
         if (results.response) {
             session.endDialogWithResult({
-                response: { startLocation: session.dialogData.startLocation }
+                response: { noChange: true }
             });
         }
         else {
-            builder.Prompts.text(session, "Enter an address you'd like to start from:");
+            var str;
+
+            if (session.dialogData.direction) {
+                str = "you'd like to start from:";
+            }
+            else {
+                str = "of where you'd like to go:";
+            }
+            builder.Prompts.text(session, "Enter an address " + str);
         }
     },
     function (session, results) {
         if (results.response) {
-            getGeo(results.response, function (start, startGeo) {
-                if (start == "ERROR") {
+            getGeo(results.response, function (address, addressGeo) {
+                if (address == "ERROR") {
                     session.send("ERROR! Could not validate address.")
-                    session.replaceDialog('/getStartLocation');
+                    session.replaceDialog('/getLocation', session.dialogData.direction);
                 }
                 else {
-                    session.userData.route.start = start;
-                    session.userData.route.startGeo = startGeo;
+                    if (session.dialogData.direction) {
+                        session.userData.route.start = address;
+                        session.userData.route.startGeo = addressGeo;
+                    }
+                    else {
+                        session.userData.route.dest = address;
+                        session.userData.route.destGeo = addressGeo;
+                    }
 
-                    session.send("Thanks to the TomTom Geocoding API, I think you mean \"" + session.userData.route.start +
-                        "\" which I know is located at " + session.userData.route.startGeo);
-
-                    session.endDialogWithResult({
-                        response: { startLocation: results.response }
-                    });
-                }
-            });
-        } else {
-            session.endDialogWithResult({
-                resumed: builder.ResumeReason.notCompleted
-            });
-        }
-    }
-]);
-
-// A dialog to get a destination
-bot.dialog('/getDestLocation', [
-    function (session, destLocation, next) {
-        if (destLocation) {
-            session.dialogData.destLocation = destLocation;
-
-            builder.Prompts.confirm(session, "Are you traveling to \"" + session.dialogData.destLocation + "\" again?");
-        }
-        else {
-            next(); // Skip to asking if we don't have the location
-        }
-    },
-    function (session, results) {
-        if (results.response) {
-            session.endDialogWithResult({
-                response: { destLocation: session.dialogData.destLocation }
-            });
-        }
-        else {
-            builder.Prompts.text(session, "Enter the address of where you'd like to go:");
-        }
-    },
-    function (session, results) {
-        if (results.response) {
-            getGeo(results.response, function (dest, destGeo) {
-                if (dest == "ERROR") {
-                    session.send("ERROR! Could not validate address.")
-                    session.replaceDialog('/getDestLocation');
-                }
-                else {
-                    session.userData.route.dest = dest;
-                    session.userData.route.destGeo = destGeo;
-
-                    session.send("Thanks to the TomTom Geocoding API, I think you mean \"" + session.userData.route.dest +
-                        "\" which I know is located at " + session.userData.route.destGeo);
+                    session.send("Thanks to the TomTom Geocoding API, I think you mean \"" + address +
+                        "\" which I know is located at " + addressGeo);
 
                     session.endDialogWithResult({
-                        response: { destLocation: results.response }
+                        response: { input: results.response, address: address, addressGeo: addressGeo }
                     });
                 }
             });
