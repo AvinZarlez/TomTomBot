@@ -39,7 +39,7 @@ Done! You can now chat with the bot in the emulator. No Microsoft App ID/Passwor
 2. Deploy code from https://github.com/TobiahZ/TomTomBot 
 3. Create account on https://dev.botframework.com/
 4. Create bot on https://dev.botframework.com/ , follow step by step instruction. 
-	1. NOTE: Enter the URL of your Azure App Service, plus “/api/messages” Example: https://your.url.com/api/messages (That is the version I am currently hosting on my own Azure).
+	1. NOTE: Enter the URL of your Azure App Service, plus “/api/messages” Example: https://your.url.com/api/messages
 	2. NOTE: Make sure to write down both the Microsoft App ID AND generated Password! Password will only ever display once!
 5. Set up environmental variables on Azure App Service under “Application Settings”. 
 	1. Three values. “MicrosoftAppId” given during bot creation, “MicrosoftAppPassword” generated during bot creation, and “TomTomAPIKey” a valid TomTom API key.
