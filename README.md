@@ -23,27 +23,27 @@ Bot Framework Emulator: http://emulator.botframework.com/
 Git: https://git-scm.com/ (Nice-To-Have)
 
 ### Instructions for Local Setup: 
-	1. Download project code into a folder
-	2. Open folder in Visual Studio Code
-	3. Open “.vscode/launch.json” and edit the “TomTomAPIKey” value to a valid TomTom API Key. Register at https://developer.tomtom.com/user/register for a free evaluation key. 
-	4. Open terminal (either within VSCode or external in project folder) and run “npm install” to get dependencies
-	5. Go to the “Debug” tab and hit play/launch project. Confirm node server launch in debug console
-	6. Launch Bot Framework Emulator, connect to default URL (“http://localhost:3978/api/messages”)
+
+1. Download project code into a folder
+2. Open folder in Visual Studio Code
+3. Open “.vscode/launch.json” and edit the “TomTomAPIKey” value to a valid TomTom API Key. Register at https://developer.tomtom.com/user/register for a free evaluation key. 
+4. Open terminal (either within VSCode or external in project folder) and run “npm install” to get dependencies
+5. Go to the “Debug” tab and hit play/launch project. Confirm node server launch in debug console
+6. Launch Bot Framework Emulator, connect to default URL (“http://localhost:3978/api/messages”)
  
 Done! You can now chat with the bot in the emulator. No Microsoft App ID/Password required for local debugging.
 
 ### Instructions for web hosted setup
-	1. In your Azure Portal, create an Azure App Service for the bot/project. Note the URL
-	2. Deploy code from https://github.com/TobiahZ/TomTomBot 
-	3. Create account on https://dev.botframework.com/
-	4. Create bot on https://dev.botframework.com/ , follow step by step instruction. 
-	  a. NOTE: Enter the URL of your Azure App Service, plus “/api/messages”
-	    i. Example: https://tomtomapidemo.azurewebsites.net/api/messages (That is the version I am currently hosting on my own Azure)
-	  b. NOTE: Make sure to write down both the Microsoft App ID AND generated Password!
-	    ii. Password will only ever display once!
-	5. Set up environmental variables on Azure App Service under “Application Settings”. 
-	  a. Three values. “MicrosoftAppId” given during bot creation, “MicrosoftAppPassword” generated during bot creation, and “TomTomAPIKey” a valid TomTom API key.
-	  b. NOTE: May need to restart service after entering these variables.
+
+1. In your Azure Portal, create an Azure App Service for the bot/project. Note the URL
+2. Deploy code from https://github.com/TobiahZ/TomTomBot 
+3. Create account on https://dev.botframework.com/
+4. Create bot on https://dev.botframework.com/ , follow step by step instruction. 
+	1. NOTE: Enter the URL of your Azure App Service, plus “/api/messages” Example: https://<URL>/api/messages (That is the version I am currently hosting on my own Azure).
+	2. NOTE: Make sure to write down both the Microsoft App ID AND generated Password! Password will only ever display once!
+5. Set up environmental variables on Azure App Service under “Application Settings”. 
+	1. Three values. “MicrosoftAppId” given during bot creation, “MicrosoftAppPassword” generated during bot creation, and “TomTomAPIKey” a valid TomTom API key.
+	2. NOTE: May need to restart service after entering these variables.
 
 Done! You should be able to test the bot from the web chat on https://dev.botframework.com/ , and from there set up username / tokens / etc. for all other platforms.
  
