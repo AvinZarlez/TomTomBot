@@ -11,6 +11,7 @@ Fuzzy free text search to find any street address or POI in the world. Besides f
 *Online Routing*  
 The most advanced routing engine integrating real-time and historical traffic information. Simply plan a route from A to B, or completely edit your trip with way-points and departure time. It allows for optimizing complex logistical problems using matrix routing functionality and if needed it even takes restrictions for heavy vehicles into account. For the most adventurous trips it allows you to set some cool features like 'hilliness' and 'windiness' of the road. 
 
+![TomTomBot](TomTomBotDemo.png?raw=true "TomTomBot Demo")
 
 ## Installation
 ### Software Requirements
